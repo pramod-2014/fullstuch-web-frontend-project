@@ -48,5 +48,7 @@ stages:
               manifests: |
                 k8s/deployment.yaml
                 k8s/service.yaml
+                apex-front-main/k8s/deployment.yaml
+                apex-front-main/k8s/service.yaml
               containers: |
                 $(containerRegistry)/$(imageRepository):$(tag)
