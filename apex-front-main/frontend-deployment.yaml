@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: <dockerhub-username>/frontend:latest
+        image: prmd77/frontend:latest
         ports:
         - containerPort: 80
         
