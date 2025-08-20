@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: prmd77/frontend:latest
+        image: prmd77/frontend:362
         ports:
         - containerPort: 80
         
