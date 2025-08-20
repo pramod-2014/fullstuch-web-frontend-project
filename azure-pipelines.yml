@@ -45,8 +45,8 @@ stages:
               action: deploy
               kubernetesServiceConnection: $(kubernetesServiceConnection)
               namespace: $(namespace)
-              manifests: |
-                k8s/deployment.yaml
-                k8s/service.yaml
+              manifests: |                
+                  $(System.DefaultWorkingDirectory)/deployment.yaml
+                  $(System.DefaultWorkingDirectory)/service.yaml
               containers: |
                 $(containerRegistry)/$(imageRepository):$(tag)
