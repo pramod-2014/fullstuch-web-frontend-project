@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-      - none
+      - none  # Manual trigger only
 
 pool: 
   name: "Infra-Runners-pool"
@@ -20,29 +20,49 @@ stages:
   - stage: Build
     displayName: Build and Push
     jobs:
-      - job: Build
-        displayName: build and scan
+      - job: BuildandScan
+        displayName: Build and Scan
         steps:
           - checkout: self
-         # TFLint install and run
-        - script: |
-            curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
-            tflint
-          displayName: "Run TFLint"
 
-        # Checkov install and run
-        - script: |
-            pip install checkov
-            checkov -d .
-          displayName: "Run Checkov"
-        
-        # tfsec install and run
-        
+          # SonarCloud Prepare
+          - task: SonarCloudPrepare@1
+            inputs:
+              SonarCloud: 'sonarqubeServiceConnection'    # Replace with your service connection name
+              organization: 'cloudsolution'               # From SonarCloud URL
+              scannerMode: 'CLI'
+              configMode: 'manual'
+              cliProjectKey: 'cloudsolution_cloudsolution'
+              cliProjectName: 'cloudsolution'
+              extraProperties: |
+                sonar.sources=.
+                sonar.exclusions=**/tests/**
 
+          #  TFLint install and run
+          - script: |
+              curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+              tflint
+            displayName: "Run TFLint"
 
+          # Checkov install and run
+          - script: |
+              pip install checkov
+              checkov -d .
+            displayName: "Run Checkov"
 
-        - task: Docker@2
-           displayName: Build and Push image
+          # tfsec run
+          - task: tfsec@1
+            inputs:
+              version: 'v1.26.0'
+              debug: true
+              dir: 'apex-front-main'
+
+          #  SonarCloud Analyze
+          - task: SonarCloudAnalyze@1
+
+          # Docker build and push
+          - task: Docker@2
+            displayName: Build and Push image
             inputs:
               command: buildAndPush
               repository: $(imageRepository)
@@ -51,11 +71,15 @@ stages:
               tags: |
                 $(tag)
 
+          # SonarCloud Publish
+          - task: SonarCloudPublish@1
+            inputs:
+              pollingTimeoutSec: '300'
+
   - stage: Deploy
     displayName: Deploy to AKS
     jobs:
       - job: Deploy
-        
         steps:
           - task: KubernetesManifest@1
             displayName: Deploy to AKS
@@ -64,7 +88,7 @@ stages:
               kubernetesServiceConnection: $(kubernetesServiceConnection)
               namespace: $(namespace)
               manifests: |                
-                  apex-front-main/frontend-deployment.yaml
-                  apex-front-main/service.yaml
+                apex-front-main/frontend-deployment.yaml
+                apex-front-main/service.yaml
               containers: |
                 $(containerRegistry)/$(imageRepository):$(tag)
