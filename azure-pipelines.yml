@@ -21,9 +21,28 @@ stages:
     displayName: Build and Push
     jobs:
       - job: Build
+        displayName: build and scan
         steps:
-          - task: Docker@2
-            displayName: Build and Push image
+          - checkout: self
+         # TFLint install and run
+        - script: |
+            curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+            tflint
+          displayName: "Run TFLint"
+
+        # Checkov install and run
+        - script: |
+            pip install checkov
+            checkov -d .
+          displayName: "Run Checkov"
+        
+        # tfsec install and run
+        
+
+
+
+        - task: Docker@2
+           displayName: Build and Push image
             inputs:
               command: buildAndPush
               repository: $(imageRepository)
