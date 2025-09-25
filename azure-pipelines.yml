@@ -5,8 +5,7 @@ trigger:
 
 pool: 
   name: "Infra-Runners-pool"
-  demands:
-    - agent.name -equals awshosted
+  
 
 variables:
   dockerRegistryServiceConnection: 'DockerHubConnection'
