@@ -3,8 +3,9 @@ trigger:
     include:
       - none  # Manual trigger only
 
-pool: 
+pool:
   name: "Infra-Runners-pool"
+
   
 
 variables:
