@@ -23,31 +23,37 @@ stages:
         steps:
           - checkout: self
 
+          # ✅ SonarCloud Prepare
           - task: SonarCloudPrepare@1
             inputs:
-              SonarCloud: 'sonarqubeServiceConnection'
-              organization: 'cloudsolution'
+              SonarCloud: 'sonarqubeServiceConnection'   # Service connection name from DevOps
+              organization: 'cloudsolution'              # From SonarCloud organization URL
               scannerMode: 'CLI'
               configMode: 'manual'
-              cliProjectKey: 'cloudsolution_cloudsolution'
+              cliProjectKey: 'cloudsolution_cloudsolution' # Exact Project Key from SonarCloud
               cliProjectName: 'cloudsolution'
               extraProperties: |
                 sonar.sources=.
                 sonar.exclusions=**/tests/**
-            continueOnError: true
 
+          # ✅ Run SonarCloud Analysis (No Publish step needed now)
+          - task: SonarCloudAnalyze@1
+
+          # TFLint install and run
           - script: |
               curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
               tflint
             displayName: "Run TFLint"
             continueOnError: true
 
+          # Checkov install and run
           - script: |
               pip install checkov
               checkov -d .
             displayName: "Run Checkov"
             continueOnError: true
 
+          # tfsec run
           - task: tfsec@1
             inputs:
               version: 'v1.26.0'
@@ -55,9 +61,7 @@ stages:
               dir: 'apex-front-main'
             continueOnError: true
 
-          - task: SonarCloudAnalyze@1
-            continueOnError: true
-
+          # Docker build and push
           - task: Docker@2
             displayName: Build and Push image
             inputs:
@@ -69,15 +73,10 @@ stages:
                 $(tag)
             continueOnError: true
 
-          - task: SonarCloudPublish@1
-            inputs:
-              pollingTimeoutSec: '300'
-            continueOnError: true
-
   - stage: Deploy
     displayName: Deploy to AKS
-    dependsOn: []     # Isse independent ho gaya
-    condition: always()  # Fail hone ke baad bhi chalega
+    dependsOn: []         # Independent stage
+    condition: always()   # Always run (even if Build fails)
     jobs:
       - job: Deploy
         steps:
