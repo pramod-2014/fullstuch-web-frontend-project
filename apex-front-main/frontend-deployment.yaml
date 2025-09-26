@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: frontend-ns  # Avoid using "default" namespace
+  namespace: frontend-ns
 spec:
   replicas: 2
   selector:
@@ -16,13 +16,13 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
-        fsGroup: 2000
+        runAsGroup: 3000
         seccompProfile:
           type: RuntimeDefault
-      automountServiceAccountToken: false  # Disable token mounting if not needed
+      automountServiceAccountToken: false
       containers:
         - name: frontend
-          image: prmd77/frontend@sha256:<REPLACE_WITH_ACTUAL_DIGEST>  # ✅ Use image digest
+          image: prmd77/frontend@sha256:abcd1234efgh...  # 🔁 Replace with actual digest
           imagePullPolicy: Always
           ports:
             - containerPort: 80
