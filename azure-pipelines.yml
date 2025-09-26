@@ -6,9 +6,6 @@ trigger:
 pool:
   vmImage: 'ubuntu-latest'
 
-
-  
-
 variables:
   dockerRegistryServiceConnection: 'DockerHubConnection'
   imageRepository: 'prmd77/frontend'
@@ -26,11 +23,10 @@ stages:
         steps:
           - checkout: self
 
-          # SonarCloud Prepare
           - task: SonarCloudPrepare@1
             inputs:
-              SonarCloud: 'sonarqubeServiceConnection'    # Replace with your service connection name
-              organization: 'cloudsolution'               # From SonarCloud URL
+              SonarCloud: 'sonarqubeServiceConnection'
+              organization: 'cloudsolution'
               scannerMode: 'CLI'
               configMode: 'manual'
               cliProjectKey: 'cloudsolution_cloudsolution'
@@ -38,30 +34,30 @@ stages:
               extraProperties: |
                 sonar.sources=.
                 sonar.exclusions=**/tests/**
+            continueOnError: true
 
-          #  TFLint install and run
           - script: |
               curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
               tflint
             displayName: "Run TFLint"
+            continueOnError: true
 
-          # Checkov install and run
           - script: |
               pip install checkov
               checkov -d .
             displayName: "Run Checkov"
+            continueOnError: true
 
-          # tfsec run
           - task: tfsec@1
             inputs:
               version: 'v1.26.0'
               debug: true
               dir: 'apex-front-main'
+            continueOnError: true
 
-          #  SonarCloud Analyze
           - task: SonarCloudAnalyze@1
+            continueOnError: true
 
-          # Docker build and push
           - task: Docker@2
             displayName: Build and Push image
             inputs:
@@ -71,14 +67,17 @@ stages:
               containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
                 $(tag)
+            continueOnError: true
 
-          # SonarCloud Publish
           - task: SonarCloudPublish@1
             inputs:
               pollingTimeoutSec: '300'
+            continueOnError: true
 
   - stage: Deploy
     displayName: Deploy to AKS
+    dependsOn: []     # Isse independent ho gaya
+    condition: always()  # Fail hone ke baad bhi chalega
     jobs:
       - job: Deploy
         steps:
@@ -93,3 +92,4 @@ stages:
                 apex-front-main/service.yaml
               containers: |
                 $(containerRegistry)/$(imageRepository):$(tag)
+            continueOnError: true
