@@ -8,6 +8,11 @@ RUN npm run build
 # Stage 2: Nginx to serve frontend
 FROM nginx:alpine
 COPY --from=build /app/dist /usr/share/nginx/html
+
+# Add HEALTHCHECK
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --spider http://localhost || exit 1
+
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 
