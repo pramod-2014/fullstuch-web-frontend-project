@@ -44,14 +44,14 @@ stages:
               curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
               tflint
             displayName: "Run TFLint"
-            continueOnError: true
+            
 
           # Checkov install and run
           - script: |
               pip install checkov
               checkov -d .
             displayName: "Run Checkov"
-            continueOnError: true
+            
 
           # tfsec run
           - task: tfsec@1
@@ -59,7 +59,7 @@ stages:
               version: 'v1.26.0'
               debug: true
               dir: 'apex-front-main'
-            continueOnError: true
+          
 
           # Docker build and push
           - task: Docker@2
@@ -71,12 +71,12 @@ stages:
               containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
                 $(tag)
-            continueOnError: true
+          
 
   - stage: Deploy
     displayName: Deploy to AKS
-    dependsOn: []         # Independent stage
-    condition: always()   # Always run (even if Build fails)
+    dependsOn: [Build]         # Independent stage
+   
     jobs:
       - job: Deploy
         steps:
