@@ -4,7 +4,8 @@ trigger:
       - none  # Manual trigger only
 
 pool:
-  name: "Infra-Runners-pool"
+  vmImage: 'ubuntu-latest'
+
 
   
 
