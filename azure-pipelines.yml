@@ -26,11 +26,11 @@ stages:
           # ✅ SonarCloud Prepare
           - task: SonarCloudPrepare@1
             inputs:
-              SonarCloud: 'sonarqubeServiceConnection'   # Service connection name from DevOps
-              organization: 'cloudsolution'              # From SonarCloud organization URL
+              SonarCloud: 'sonarqubeServiceConnection'   
+              organization: 'cloudsolution'             
               scannerMode: 'CLI'
               configMode: 'manual'
-              cliProjectKey: 'cloudsolution_cloudsolution' # Exact Project Key from SonarCloud
+              cliProjectKey: 'cloudsolution_cloudsolution'
               cliProjectName: 'cloudsolution'
               extraProperties: |
                 sonar.sources=.
@@ -71,7 +71,11 @@ stages:
               containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
                 $(tag)
-          
+          - task: trivy@2
+            inputs:
+              version: 'latest'
+              type: 'image'
+              target: 'prmd77/frontend:latest'
 
   - stage: Deploy
     displayName: Deploy to AKS
