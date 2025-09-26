@@ -13,44 +13,44 @@ spec:
       labels:
         app: frontend
     spec:
-      securityContext:
+      automountServiceAccountToken: false
+      securityContext:   # pod-level security
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 3000
         seccompProfile:
           type: RuntimeDefault
-      automountServiceAccountToken: false
       containers:
-        - name: frontend
-          image: prmd77/frontend@sha256:abcd1234efgh...  # 🔁 Replace with actual digest
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 80
-          env:
-            - name: REACT_APP_API_URL
-              value: "http://backend-service:5000"
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 10
-            periodSeconds: 20
-          resources:
-            requests:
-              cpu: "100m"
-              memory: "128Mi"
-            limits:
-              cpu: "500m"
-              memory: "512Mi"
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
+      - name: frontend
+        image: prmd77/frontend@sha256:abcd1234efgh...  # replace with actual digest
+        imagePullPolicy: Always
+        ports:
+          - containerPort: 80
+        env:
+          - name: REACT_APP_API_URL
+            value: "http://backend-service:5000"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 20
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        securityContext:   # container-level security
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
