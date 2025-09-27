@@ -69,11 +69,23 @@ stages:
               tags: |
                 $(tag)
 
-          # ✅ Trivy scan (fail if HIGH/CRITICAL vulnerabilities found)
+          # Install Trivy
+          - script: |
+              echo "Installing Trivy..."
+              sudo apt-get update -y
+              sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+              wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+              echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
+              sudo apt-get update -y
+              sudo apt-get install -y trivy
+            displayName: "Install Trivy"
+
+          # Run Trivy scan
           - script: |
               echo "Scanning image with Trivy..."
               trivy image --exit-code 1 --severity HIGH,CRITICAL $(containerRegistry)/$(imageRepository):$(tag)
             displayName: "Trivy Scan"
+
 
           # ✅ Push only if scan passed
           - task: Docker@2
