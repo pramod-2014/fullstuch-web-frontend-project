@@ -13,10 +13,12 @@ variables:
   tag: '$(Build.BuildId)'
   kubernetesServiceConnection: 'aks-service-connection'
   namespace: 'default'
+  dockerUsername: '$(dockerUsername)'    # Docker Hub username in Pipeline variable
+  dockerPassword: '$(dockerPassword)'    # Docker Hub password or PAT in Pipeline variable
 
 stages:
   - stage: Build
-    displayName: Build and Scan
+    displayName: Build, Scan & Push
     jobs:
       - job: BuildandScan
         displayName: Build and Scan
@@ -58,38 +60,31 @@ stages:
               debug: true
               dir: 'apex-front-main'
 
-          # ✅ Docker build (NO push yet)
+          # ✅ Docker build + push temporary image for Trivy scan
           - task: Docker@2
-            displayName: Build Docker image
+            displayName: Build & Push Temp Image for Scan
             inputs:
-              command: build
+              command: buildAndPush
               repository: $(imageRepository)
               dockerfile: '**/Dockerfile'
               containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
-                $(tag)
+                temp-scan
 
-          # Install Trivy
+          # ✅ Trivy remote scan using Docker Hub credentials
           - script: |
-              echo "Installing Trivy..."
-              sudo apt-get update -y
-              sudo apt-get install -y wget apt-transport-https gnupg lsb-release
-              wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
-              echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
-              sudo apt-get update -y
-              sudo apt-get install -y trivy
-            displayName: "Install Trivy"
+              echo "Scanning remote image with Trivy..."
+              trivy image \
+                --exit-code 1 \
+                --severity HIGH,CRITICAL \
+                --username $(dockerUsername) \
+                --password $(dockerPassword) \
+                $(imageRepository):temp-scan
+            displayName: "Trivy Remote Scan"
 
-          # Run Trivy scan
-          - script: |
-              echo "Scanning image with Trivy..."
-              trivy image --exit-code 1 --severity HIGH,CRITICAL $(containerRegistry)/$(imageRepository):$(tag)
-            displayName: "Trivy Scan"
-
-
-          # ✅ Push only if scan passed
+          # ✅ Push final image only if scan passes
           - task: Docker@2
-            displayName: Push Docker image
+            displayName: Push Final Image
             inputs:
               command: push
               repository: $(imageRepository)
@@ -99,7 +94,7 @@ stages:
 
   - stage: Deploy
     displayName: Deploy to AKS
-    dependsOn: [Build]         # Run only if Build succeeds
+    dependsOn: [Build]         
     jobs:
       - job: Deploy
         steps:
