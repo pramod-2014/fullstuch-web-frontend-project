@@ -13,8 +13,8 @@ variables:
   tag: '$(Build.BuildId)'
   kubernetesServiceConnection: 'aks-service-connection'
   namespace: 'default'
-  dockerUsername: '$(dockerUsername)'    # Docker Hub username in Pipeline variable
-  dockerPassword: '$(dockerPassword)'    # Docker Hub password or PAT in Pipeline variable
+  dockerUsername: '$(dockerUsername)'  # Pipeline variable (secret)
+  dockerPassword: '$(dockerPassword)'  # Pipeline variable (secret)
 
 stages:
   - stage: Build
@@ -60,7 +60,7 @@ stages:
               debug: true
               dir: 'apex-front-main'
 
-          # ✅ Docker build + push temporary image for Trivy scan
+          # ✅ Docker build + push temp image for Trivy scan
           - task: Docker@2
             displayName: Build & Push Temp Image for Scan
             inputs:
@@ -70,6 +70,17 @@ stages:
               containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
                 temp-scan
+
+          # ✅ Install Trivy on Hosted Agent
+          - script: |
+              sudo apt-get update -y
+              sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+              wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+              echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
+              sudo apt-get update -y
+              sudo apt-get install -y trivy
+              trivy --version
+            displayName: "Install Trivy"
 
           # ✅ Trivy remote scan using Docker Hub credentials
           - script: |
