@@ -13,8 +13,10 @@ variables:
   tag: '$(Build.BuildId)'
   kubernetesServiceConnection: 'aks-service-connection'
   namespace: 'default'
-  dockerUsername: '$(dockerUsername)'  # Pipeline variable (secret)
-  dockerPassword: '$(dockerPassword)'  # Pipeline variable (secret)
+  dockerUsername: 'mydockerusername'       # direct value
+  # dockerPasswordSecret should be defined in Variable Group as secret
+  # Reference it here by the exact name in Variable Group
+  dockerPasswordSecret: $(dockerPasswordSecret)  
 
 stages:
   - stage: Build
@@ -28,8 +30,8 @@ stages:
           # ✅ SonarCloud Prepare
           - task: SonarCloudPrepare@1
             inputs:
-              SonarCloud: 'sonarqubeServiceConnection'   
-              organization: 'cloudsolution'             
+              SonarCloud: 'sonarqubeServiceConnection'
+              organization: 'cloudsolution'
               scannerMode: 'CLI'
               configMode: 'manual'
               cliProjectKey: 'cloudsolution_cloudsolution'
@@ -46,13 +48,13 @@ stages:
               curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
               tflint
             displayName: "Run TFLint"
-            
+
           # ✅ Checkov install and run
           - script: |
               pip install checkov
               checkov -d .
             displayName: "Run Checkov"
-            
+
           # ✅ tfsec run
           - task: tfsec@1
             inputs:
@@ -82,6 +84,14 @@ stages:
               trivy --version
             displayName: "Install Trivy"
 
+          # ✅ Validate Docker credentials
+          - script: |
+              if [ -z "$(dockerUsername)" ] || [ -z "$(dockerPasswordSecret)" ]; then
+                echo "Error: Docker credentials are not set properly!"
+                exit 1
+              fi
+            displayName: "Validate Docker Credentials"
+
           # ✅ Trivy remote scan using Docker Hub credentials
           - script: |
               echo "Scanning remote image with Trivy..."
@@ -89,7 +99,7 @@ stages:
                 --exit-code 1 \
                 --severity HIGH,CRITICAL \
                 --username $(dockerUsername) \
-                --password $(dockerPassword) \
+                --password $(dockerPasswordSecret) \
                 $(imageRepository):temp-scan
             displayName: "Trivy Remote Scan"
 
@@ -105,7 +115,7 @@ stages:
 
   - stage: Deploy
     displayName: Deploy to AKS
-    dependsOn: [Build]         
+    dependsOn: [Build]
     jobs:
       - job: Deploy
         steps:
@@ -115,7 +125,7 @@ stages:
               action: deploy
               kubernetesServiceConnection: $(kubernetesServiceConnection)
               namespace: $(namespace)
-              manifests: |                
+              manifests: |
                 apex-front-main/frontend-deployment.yaml
                 apex-front-main/service.yaml
               containers: |
