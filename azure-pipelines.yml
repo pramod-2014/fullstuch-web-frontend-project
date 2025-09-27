@@ -16,7 +16,7 @@ variables:
 
 stages:
   - stage: Build
-    displayName: Build and Push
+    displayName: Build and Scan
     jobs:
       - job: BuildandScan
         displayName: Build and Scan
@@ -36,51 +36,58 @@ stages:
                 sonar.sources=.
                 sonar.exclusions=**/tests/**
 
-          # ✅ Run SonarCloud Analysis (No Publish step needed now)
+          # ✅ Run SonarCloud Analysis
           - task: SonarCloudAnalyze@1
 
-          # TFLint install and run
+          # ✅ TFLint install and run
           - script: |
               curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
               tflint
             displayName: "Run TFLint"
             
-
-          # Checkov install and run
+          # ✅ Checkov install and run
           - script: |
               pip install checkov
               checkov -d .
             displayName: "Run Checkov"
             
-
-          # tfsec run
+          # ✅ tfsec run
           - task: tfsec@1
             inputs:
               version: 'v1.26.0'
               debug: true
               dir: 'apex-front-main'
-          
 
-          # Docker build and push
+          # ✅ Docker build (NO push yet)
           - task: Docker@2
-            displayName: Build and Push image
+            displayName: Build Docker image
             inputs:
-              command: buildAndPush
+              command: build
               repository: $(imageRepository)
               dockerfile: '**/Dockerfile'
               containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
                 $(tag)
-          - task: trivy@2
+
+          # ✅ Trivy scan (fail if HIGH/CRITICAL vulnerabilities found)
+          - script: |
+              echo "Scanning image with Trivy..."
+              trivy image --exit-code 1 --severity HIGH,CRITICAL $(containerRegistry)/$(imageRepository):$(tag)
+            displayName: "Trivy Scan"
+
+          # ✅ Push only if scan passed
+          - task: Docker@2
+            displayName: Push Docker image
             inputs:
-              version: 'latest'
-              type: 'image'
-              target: 'prmd77/frontend:latest'
+              command: push
+              repository: $(imageRepository)
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
 
   - stage: Deploy
     displayName: Deploy to AKS
-    dependsOn: [Build]         # Independent stage
-   
+    dependsOn: [Build]         # Run only if Build succeeds
     jobs:
       - job: Deploy
         steps:
