@@ -16,8 +16,8 @@ spec:
       automountServiceAccountToken: false
       securityContext:   # pod-level security
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 3000
+        runAsUser: 10001
+        runAsGroup: 30001
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -50,8 +50,8 @@ spec:
             memory: "512Mi"
         securityContext:   # container-level security
           runAsNonRoot: true
-          runAsUser: 1000
-          runAsGroup: 3000
+          runAsUser: 10001
+          runAsGroup: 30001
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           capabilities:
