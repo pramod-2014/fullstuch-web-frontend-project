@@ -132,25 +132,30 @@ stages:
         - task: Kubernetes@1
           displayName: "Apply RBAC Role and RoleBinding"
           inputs:
-            connectionType: 'Kubernetes Service Connection'
-            kubernetesServiceConnection: $(kubernetesServiceConnection)
-            command: apply
+            connectionType: 'Azure Resource Manager'
+            azureSubscriptionEndpoint: 'aks-service-connection'
+            azureResourceGroup: 'aks-group'
+            namespace: '$(namespace)'
+            command: 'apply'
             useConfigurationFile: true
             configuration: 'apex-front-main/rbac.yaml'
-            arguments: --validate=false
-            namespace: $(namespace)
+            arguments: '--validate=false'
+            secretType: 'dockerRegistry'
+            containerRegistryType: 'Azure Container Registry'
 
         - task: KubernetesManifest@1
           displayName: Deploy to AKS
           inputs:
-            action: deploy
-            kubernetesServiceConnection: 'aks-service-connection'
-            namespace: $(namespace)
+            action: 'deploy'
+            connectionType: 'azureResourceManager'
+            azureSubscriptionConnection: 'Azure subscription 1(a29ac6ee-0d4f-41fe-8359-df26a6fce56c)'
+            azureResourceGroup: 'aks-group'
+            kubernetesCluster: 'myAKSCluster'
+            namespace: '$(namespace)'
             manifests: |
               apex-front-main/frontend-deployment.yaml
               apex-front-main/service.yaml
-            containers: |
-              $(containerRegistry)/$(imageRepository):$(tag)
+            containers: '$(containerRegistry)/$(imageRepository):$(tag)'
           continueOnError: true
 
 
