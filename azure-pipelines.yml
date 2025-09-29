@@ -127,7 +127,13 @@ stages:
     jobs:
       - job: Deploy
         steps:
-          # Apply RBAC Role and RoleBinding (CKV_SECRET_6 suppressed via CLI earlier)
+          # ✅ Create namespace if not exists
+          - script: |
+              echo "Ensuring namespace exists..."
+              kubectl get ns $(namespace) || kubectl create ns $(namespace)
+            displayName: "Ensure Kubernetes Namespace"
+
+          # Apply RBAC Role and RoleBinding
           - task: Kubernetes@1
             displayName: "Apply RBAC Role and RoleBinding"
             inputs:
