@@ -8,6 +8,8 @@ RUN npm run build
 # Stage 2: Nginx to serve frontend
 FROM nginx:alpine
 
+RUN apk update && apk upgrade
+
 # Create non-root user and group for running nginx
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
