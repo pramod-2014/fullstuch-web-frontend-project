@@ -121,6 +121,7 @@ stages:
               containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
                 $(tag)
+  
 
   - stage: Deploy
     displayName: Deploy to AKS
@@ -128,22 +129,29 @@ stages:
     jobs:
       - job: Deploy
         steps:
-          # Step 1: Apply RBAC
-          - script: |
-              echo "Applying RBAC Role and RoleBinding..."
-              kubectl apply -f apex-front-main/rbac.yaml --validate=false
-            displayName: "Apply RBAC for pipeline access"
+        - task: Kubernetes@1
+          displayName: "Apply RBAC Role and RoleBinding"
+          inputs:
+            connectionType: 'Kubernetes Service Connection'
+            kubernetesServiceConnection: $(kubernetesServiceConnection)
+            command: apply
+            useConfigurationFile: true
+            configuration: 'apex-front-main/rbac.yaml'
+            arguments: --validate=false
+            namespace: $(namespace)
 
-          # Step 2: Deploy to AKS
-          - task: KubernetesManifest@1
-            displayName: Deploy to AKS
-            inputs:
-              action: deploy
-              kubernetesServiceConnection: $(kubernetesServiceConnection)
-              namespace: $(namespace)
-              manifests: |
-                apex-front-main/frontend-deployment.yaml
-                apex-front-main/service.yaml
-              containers: |
-                $(containerRegistry)/$(imageRepository):$(tag)
-            continueOnError: true
+        - task: KubernetesManifest@1
+          displayName: Deploy to AKS
+          inputs:
+            action: deploy
+            kubernetesServiceConnection: $(kubernetesServiceConnection)
+            namespace: $(namespace)
+            manifests: |
+              apex-front-main/frontend-deployment.yaml
+              apex-front-main/service.yaml
+            containers: |
+              $(containerRegistry)/$(imageRepository):$(tag)
+          continueOnError: true
+
+
+
