@@ -12,7 +12,7 @@ variables:
   containerRegistry: 'prmd77'
   tag: '$(Build.BuildId)'
   kubernetesServiceConnection: 'aks-service-connection'
-  namespace: 'default'
+  namespace: 'frontend-ns'
   dockerUsername: 'prmd77'       # direct value
  
 
