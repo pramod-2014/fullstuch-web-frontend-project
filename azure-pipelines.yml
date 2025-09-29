@@ -131,7 +131,7 @@ stages:
           # Step 1: Apply RBAC
           - script: |
               echo "Applying RBAC Role and RoleBinding..."
-              kubectl apply -f apex-front-main/rbac.yaml
+              kubectl apply -f apex-front-main/rbac.yaml --validate=false
             displayName: "Apply RBAC for pipeline access"
 
           # Step 2: Deploy to AKS
