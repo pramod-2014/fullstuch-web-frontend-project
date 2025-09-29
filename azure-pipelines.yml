@@ -134,6 +134,7 @@ stages:
               connectionType: 'Azure Resource Manager'
               azureSubscriptionEndpoint: 'aks-service-connection'
               azureResourceGroup: 'aks-group'
+              kubernetesCluster: 'myAKSCluster'
               namespace: '$(namespace)'
               command: 'apply'
               useConfigurationFile: true
