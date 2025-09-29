@@ -13,8 +13,9 @@ spec:
       labels:
         app: frontend
     spec:
+      serviceAccountName: deployment-sa    # <-- yaha add kiya service account name
       automountServiceAccountToken: false
-      securityContext:   # pod-level security
+      securityContext:
         runAsNonRoot: true
         runAsUser: 10001
         runAsGroup: 30001
@@ -48,7 +49,7 @@ spec:
           limits:
             cpu: "500m"
             memory: "512Mi"
-        securityContext:   # container-level security
+        securityContext:
           runAsNonRoot: true
           runAsUser: 10001
           runAsGroup: 30001
