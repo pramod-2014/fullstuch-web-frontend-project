@@ -25,7 +25,7 @@ stages:
         steps:
           - checkout: self
 
-          # ✅ SonarCloud Prepare
+          # SonarCloud Prepare
           - task: SonarCloudPrepare@1
             inputs:
               SonarCloud: 'sonarqubeServiceConnection'
@@ -38,29 +38,29 @@ stages:
                 sonar.sources=.
                 sonar.exclusions=**/tests/**
 
-          # ✅ Run SonarCloud Analysis
+          # SonarCloud Analyze
           - task: SonarCloudAnalyze@1
 
-          # ✅ TFLint install and run
+          # TFLint
           - script: |
               curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
               tflint
             displayName: "Run TFLint"
 
-          # ✅ Checkov install and run
+          # Checkov
           - script: |
               pip install checkov
               checkov -d .
             displayName: "Run Checkov"
 
-          # ✅ tfsec run
+          # tfsec
           - task: tfsec@1
             inputs:
               version: 'v1.26.0'
               debug: true
               dir: 'apex-front-main'
 
-          # ✅ Docker build + push temp image for Trivy scan
+          # Docker Build & Push Temp Image for Scan
           - task: Docker@2
             displayName: Build & Push Temp Image for Scan
             inputs:
@@ -69,9 +69,9 @@ stages:
               dockerfile: '**/Dockerfile'
               containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
-                latest
+                temp-scan
 
-          # ✅ Install Trivy on Hosted Agent
+          # Install Trivy
           - script: |
               sudo apt-get update -y
               sudo apt-get install -y wget apt-transport-https gnupg lsb-release
@@ -82,7 +82,7 @@ stages:
               trivy --version
             displayName: "Install Trivy"
 
-          # ✅ Validate Docker credentials
+          # Validate Docker Credentials
           - script: |
               if [ -z "$(dockerUsername)" ] || [ -z "$(dockerPasswordSecret)" ]; then
                 echo "Error: Docker credentials are not set properly!"
@@ -90,18 +90,29 @@ stages:
               fi
             displayName: "Validate Docker Credentials"
 
-          # ✅ Trivy remote scan using Docker Hub credentials
+          # Trivy Scan on temp-scan image
           - script: |
               echo "Scanning remote image with Trivy..."
               trivy image \
-                --exit-code 0 \
+                --exit-code 1 \
                 --severity HIGH,CRITICAL \
                 --username $(dockerUsername) \
                 --password $(dockerPasswordSecret) \
                 $(imageRepository):temp-scan
             displayName: "Trivy Remote Scan"
 
-          # ✅ Push final image only if scan passes
+          # Build Final Image (with $(tag))
+          - task: Docker@2
+            displayName: Build Final Image
+            inputs:
+              command: build
+              repository: $(imageRepository)
+              dockerfile: '**/Dockerfile'
+              containerRegistry: $(dockerRegistryServiceConnection)
+              tags: |
+                $(tag)
+
+          # Push Final Image
           - task: Docker@2
             displayName: Push Final Image
             inputs:
@@ -110,6 +121,7 @@ stages:
               containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
                 $(tag)
+
 
   - stage: Deploy
     displayName: Deploy to AKS
