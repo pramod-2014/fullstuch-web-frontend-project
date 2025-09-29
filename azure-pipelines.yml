@@ -69,7 +69,7 @@ stages:
               dockerfile: '**/Dockerfile'
               containerRegistry: $(dockerRegistryServiceConnection)
               tags: |
-                temp-scan
+                latest
 
           # ✅ Install Trivy on Hosted Agent
           - script: |
