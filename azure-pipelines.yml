@@ -122,18 +122,19 @@ stages:
               tags: |
                 $(tag)
 
-          - script: |
-              echo "Applying RBAC Role and RoleBinding..."
-               kubectl apply -f apex-front-main/rbac.yaml
-               displayName: "Apply RBAC for pipeline access"
-
-
   - stage: Deploy
     displayName: Deploy to AKS
     dependsOn: [Build]
     jobs:
       - job: Deploy
         steps:
+          # Step 1: Apply RBAC
+          - script: |
+              echo "Applying RBAC Role and RoleBinding..."
+              kubectl apply -f apex-front-main/rbac.yaml
+            displayName: "Apply RBAC for pipeline access"
+
+          # Step 2: Deploy to AKS
           - task: KubernetesManifest@1
             displayName: Deploy to AKS
             inputs:
