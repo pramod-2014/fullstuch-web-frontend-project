@@ -14,9 +14,7 @@ variables:
   kubernetesServiceConnection: 'aks-service-connection'
   namespace: 'default'
   dockerUsername: 'prmd77'       # direct value
-  # dockerPasswordSecret should be defined in Variable Group as secret
-  # Reference it here by the exact name in Variable Group
-  dockerPasswordSecret: $(dockerPasswordSecret)  
+ 
 
 stages:
   - stage: Build
