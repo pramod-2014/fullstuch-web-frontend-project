@@ -1,0 +1,25 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: frontend-ns   # us namespace ka naam jisme deploy kar rahe ho
+  name: deployment-manager
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deployment-manager-binding
+  namespace: frontend-ns
+subjects:
+- kind: ServiceAccount
+  name: default            # ya jo bhi service account use kar rahe ho
+  namespace: default       # service account ka namespace (usually 'default')
+roleRef:
+  kind: Role
+  name: deployment-manager
+  apiGroup: rbac.authorization.k8s.io
