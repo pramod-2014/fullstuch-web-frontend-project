@@ -144,7 +144,7 @@ stages:
           displayName: Deploy to AKS
           inputs:
             action: deploy
-            kubernetesServiceConnection: $(kubernetesServiceConnection)
+            kubernetesServiceConnection: 'aks-service-connection'
             namespace: $(namespace)
             manifests: |
               apex-front-main/frontend-deployment.yaml
