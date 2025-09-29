@@ -129,7 +129,7 @@ stages:
     jobs:
       - job: Deploy
         steps:
-          # checkov:skip=CKV_SECRET_6 reason="No hardcoded secret; 'secretType' is a required config parameter"
+          # checkov:skip=CKV_SECRET_6 reason="False positive due to dockerRegistry secretType, no real secret here"
           - task: Kubernetes@1
             displayName: "Apply RBAC Role and RoleBinding"
             inputs:
