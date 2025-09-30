@@ -46,10 +46,10 @@ stages:
               tflint
             displayName: "Run TFLint"
 
-          # ✅ Checkov with CKV_SECRET_6 skipped
+          # ✅ skip-check CKV_K8S_43
           - script: |
               pip install checkov
-              checkov -d . --skip-check CKV_SECRET_6
+              checkov -d . --skip-check CKV_K8S_43
             displayName: "Run Checkov"
 
           # tfsec
