@@ -126,14 +126,26 @@ stages:
     dependsOn: [Build]
     jobs:
       - job: Deploy
+        displayName: Deploy Job
         steps:
+
+          # ✅ Set AKS credentials so kubectl works
+          - task: AzureCLI@2
+            displayName: "Set AKS credentials"
+            inputs:
+              azureSubscription: 'aks-service-connection'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az aks get-credentials --resource-group aks-group --name myAKSCluster --overwrite-existing
+
           # ✅ Create namespace if not exists
           - script: |
               echo "Ensuring namespace exists..."
               kubectl get ns $(namespace) || kubectl create ns $(namespace)
             displayName: "Ensure Kubernetes Namespace"
 
-          # Apply RBAC Role and RoleBinding
+          # ✅ Apply RBAC
           - task: Kubernetes@1
             displayName: "Apply RBAC Role and RoleBinding"
             inputs:
@@ -149,13 +161,13 @@ stages:
               secretType: 'dockerRegistry'
               containerRegistryType: 'Azure Container Registry'
 
-          # Deploy to AKS
+          # ✅ Deploy manifests
           - task: KubernetesManifest@1
             displayName: Deploy to AKS
             inputs:
               action: 'deploy'
               connectionType: 'azureResourceManager'
-              azureSubscriptionConnection: 'Azure subscription 1(a29ac6ee-0d4f-41fe-8359-df26a6fce56c)'
+              azureSubscriptionConnection: 'aks-service-connection'
               azureResourceGroup: 'aks-group'
               kubernetesCluster: 'myAKSCluster'
               namespace: '$(namespace)'
@@ -163,4 +175,3 @@ stages:
                 apex-front-main/frontend-deployment.yaml
                 apex-front-main/service.yaml
               containers: '$(containerRegistry)/$(imageRepository):$(tag)'
-            continueOnError: true
