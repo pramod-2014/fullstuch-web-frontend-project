@@ -24,7 +24,8 @@ spec:
           type: RuntimeDefault
       containers:
       - name: frontend
-        image: prmd77/frontend:447  # replace with actual digest
+        image: prmd77/frontend@sha256:cccd43edae06258d04c59679a7dadd6f1134b8497140d993252caf44008838cb
+ # replace with actual digest
         imagePullPolicy: Always
         ports:
           - containerPort: 80
