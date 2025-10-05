@@ -158,7 +158,7 @@ stages:
               useConfigurationFile: true
               configuration: 'apex-front-main/rbac.yaml'
               arguments: '--validate=false'
-              secretType: 'dockerRegistry'
+              
              
 
           # ✅ Deploy manifests
