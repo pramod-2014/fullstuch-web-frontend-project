@@ -5,7 +5,7 @@ metadata:
   name: frontend
   namespace: frontend-ns
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: frontend
