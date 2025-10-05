@@ -159,7 +159,7 @@ stages:
               configuration: 'apex-front-main/rbac.yaml'
               arguments: '--validate=false'
               secretType: 'dockerRegistry'
-              containerRegistryType: 'Azure Container Registry'
+             
 
           # ✅ Deploy manifests
           - task: KubernetesManifest@1
