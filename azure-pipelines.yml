@@ -3,7 +3,6 @@ trigger:
     include:
       - feature/*
 
-
 pool:
   vmImage: 'ubuntu-latest'
 
@@ -25,7 +24,9 @@ stages:
         steps:
           - checkout: self
 
+          # ------------------------
           # SonarCloud Prepare
+          # ------------------------
           - task: SonarCloudPrepare@1
             inputs:
               SonarCloud: 'sonarqubeServiceConnection'
@@ -38,8 +39,19 @@ stages:
                 sonar.sources=.
                 sonar.exclusions=**/tests/**
 
+          # ------------------------
           # SonarCloud Analyze
+          # ------------------------
           - task: SonarCloudAnalyze@1
+
+          # ------------------------
+          # ✅ SonarCloud Publish
+          # This task checks the Quality Gate status
+          # If Quality Gate fails, pipeline will fail
+          # ------------------------
+          - task: SonarCloudPublish@1
+            inputs:
+              pollingTimeoutSec: '300'
 
           # TFLint
           - script: |
@@ -130,7 +142,7 @@ stages:
         displayName: Deploy Job
         steps:
 
-          # ✅ Set AKS credentials so kubectl works
+          # ✅ Set AKS credentials
           - task: AzureCLI@2
             displayName: "Set AKS credentials"
             inputs:
@@ -152,27 +164,3 @@ stages:
             inputs:
               connectionType: 'Azure Resource Manager'
               azureSubscriptionEndpoint: 'aks-service-connectio'
-              azureResourceGroup: 'aks-group'
-              kubernetesCluster: 'myAKSCluster'
-              namespace: '$(namespace)'
-              command: 'apply'
-              useConfigurationFile: true
-              configuration: 'apex-front-main/rbac.yaml'
-              arguments: '--validate=false'
-              
-             
-
-          # ✅ Deploy manifests
-          - task: KubernetesManifest@1
-            displayName: Deploy to AKS
-            inputs:
-              action: 'deploy'
-              connectionType: 'azureResourceManager'
-              azureSubscriptionConnection: 'Azure-DevOps-Practice-sub(a29ac6ee-0d4f-41fe-8359-df26a6fce56c)'
-              azureResourceGroup: 'aks-group'
-              kubernetesCluster: 'myAKSCluster'
-              namespace: '$(namespace)'
-              manifests: |
-                apex-front-main/frontend-deployment.yaml
-                apex-front-main/service.yaml
-              containers: '$(containerRegistry)/$(imageRepository):$(tag)'
