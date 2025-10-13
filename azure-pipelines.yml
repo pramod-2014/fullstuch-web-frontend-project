@@ -25,9 +25,9 @@ stages:
           - checkout: self
 
           # ------------------------
-          # SonarCloud Prepare
+          # ✅ Updated SonarCloud Prepare (v2)
           # ------------------------
-          - task: SonarCloudPrepare@1
+          - task: SonarCloudPrepare@2
             displayName: "Prepare SonarCloud Analysis"
             inputs:
               SonarCloud: 'sonarqubeServiceConnection'    # Azure DevOps Service Connection
@@ -42,15 +42,15 @@ stages:
                 sonar.verbose=true   # Debug info for troubleshooting
 
           # ------------------------
-          # SonarCloud Analyze
+          # ✅ Updated SonarCloud Analyze (v2)
           # ------------------------
-          - task: SonarCloudAnalyze@1
+          - task: SonarCloudAnalyze@2
             displayName: "Run SonarCloud Analysis"
 
           # ------------------------
-          # ✅ SonarCloud Publish (Latest)
+          # ✅ Updated SonarCloud Publish (v2)
           # ------------------------
-          - task: SonarCloudPublish@1
+          - task: SonarCloudPublish@2
             displayName: "Publish SonarCloud Quality Gate Result"
             inputs:
               pollingTimeoutSec: '300'
@@ -155,6 +155,9 @@ stages:
               tags: |
                 $(tag)
 
+  # ------------------------
+  # ✅ Deploy Stage
+  # ------------------------
   - stage: Deploy
     displayName: Deploy to AKS
     dependsOn: [Build]
