@@ -13,7 +13,7 @@ variables:
   tag: '$(Build.BuildId)'
   kubernetesServiceConnection: 'aks-service-connection'
   namespace: 'frontend-ns'
-  dockerUsername: 'prmd77'  # Consider storing this as secret in real usage
+  dockerUsername: 'prmd77'  # Store securely in Azure DevOps variable group/secrets
 
 stages:
   - stage: Build
@@ -28,8 +28,9 @@ stages:
           # SonarCloud Prepare
           # ------------------------
           - task: SonarCloudPrepare@1
+            displayName: "Prepare SonarCloud Analysis"
             inputs:
-              SonarCloud: 'sonarqubeServiceConnection'
+              SonarCloud: 'sonarqubeServiceConnection'    # Azure DevOps Service Connection
               organization: 'cloudsolution'
               scannerMode: 'CLI'
               configMode: 'manual'
@@ -38,41 +39,51 @@ stages:
               extraProperties: |
                 sonar.sources=.
                 sonar.exclusions=**/tests/**
+                sonar.verbose=true   # Debug info for troubleshooting
 
           # ------------------------
           # SonarCloud Analyze
           # ------------------------
           - task: SonarCloudAnalyze@1
+            displayName: "Run SonarCloud Analysis"
 
           # ------------------------
-          # ✅ SonarCloud Publish
-          # This task checks the Quality Gate status
-          # If Quality Gate fails, pipeline will fail
+          # ✅ SonarCloud Publish (Latest)
           # ------------------------
           - task: SonarCloudPublish@1
+            displayName: "Publish SonarCloud Quality Gate Result"
             inputs:
               pollingTimeoutSec: '300'
+            continueOnError: false  # Fail pipeline if Quality Gate fails
 
+          # ------------------------
           # TFLint
+          # ------------------------
           - script: |
               curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
               tflint
             displayName: "Run TFLint"
 
-          # ✅ skip-check CKV_K8S_43
+          # ------------------------
+          # Checkov
+          # ------------------------
           - script: |
               pip install checkov
               checkov -d . --skip-check CKV_K8S_43
             displayName: "Run Checkov"
 
+          # ------------------------
           # tfsec
+          # ------------------------
           - task: tfsec@1
             inputs:
               version: 'v1.26.0'
               debug: true
               dir: 'apex-front-main'
 
+          # ------------------------
           # Docker Build & Push Temp Image for Scan
+          # ------------------------
           - task: Docker@2
             displayName: Build & Push Temp Image for Scan
             inputs:
@@ -83,7 +94,9 @@ stages:
               tags: |
                 temp-scan
 
+          # ------------------------
           # Install Trivy
+          # ------------------------
           - script: |
               sudo apt-get update -y
               sudo apt-get install -y wget apt-transport-https gnupg lsb-release
@@ -94,7 +107,9 @@ stages:
               trivy --version
             displayName: "Install Trivy"
 
+          # ------------------------
           # Validate Docker Credentials
+          # ------------------------
           - script: |
               if [ -z "$(dockerUsername)" ] || [ -z "$(dockerPasswordSecret)" ]; then
                 echo "Error: Docker credentials are not set properly!"
@@ -102,7 +117,9 @@ stages:
               fi
             displayName: "Validate Docker Credentials"
 
+          # ------------------------
           # Trivy Scan on temp-scan image
+          # ------------------------
           - script: |
               echo "Scanning remote image with Trivy..."
               trivy image \
@@ -113,7 +130,9 @@ stages:
                 $(imageRepository):temp-scan
             displayName: "Trivy Remote Scan"
 
-          # Build Final Image
+          # ------------------------
+          # Build Final Docker Image
+          # ------------------------
           - task: Docker@2
             displayName: Build Final Image
             inputs:
@@ -124,7 +143,9 @@ stages:
               tags: |
                 $(tag)
 
-          # Push Final Image
+          # ------------------------
+          # Push Final Docker Image
+          # ------------------------
           - task: Docker@2
             displayName: Push Final Image
             inputs:
@@ -141,8 +162,6 @@ stages:
       - job: Deploy
         displayName: Deploy Job
         steps:
-
-          # ✅ Set AKS credentials
           - task: AzureCLI@2
             displayName: "Set AKS credentials"
             inputs:
@@ -152,15 +171,34 @@ stages:
               inlineScript: |
                 az aks get-credentials --resource-group aks-group --name myAKSCluster --overwrite-existing
 
-          # ✅ Create namespace if not exists
           - script: |
               echo "Ensuring namespace exists..."
               kubectl get ns $(namespace) || kubectl create ns $(namespace)
             displayName: "Ensure Kubernetes Namespace"
 
-          # ✅ Apply RBAC
           - task: Kubernetes@1
             displayName: "Apply RBAC Role and RoleBinding"
             inputs:
               connectionType: 'Azure Resource Manager'
               azureSubscriptionEndpoint: 'aks-service-connectio'
+              azureResourceGroup: 'aks-group'
+              kubernetesCluster: 'myAKSCluster'
+              namespace: '$(namespace)'
+              command: 'apply'
+              useConfigurationFile: true
+              configuration: 'apex-front-main/rbac.yaml'
+              arguments: '--validate=false'
+
+          - task: KubernetesManifest@1
+            displayName: Deploy to AKS
+            inputs:
+              action: 'deploy'
+              connectionType: 'azureResourceManager'
+              azureSubscriptionConnection: 'Azure-DevOps-Practice-sub(a29ac6ee-0d4f-41fe-8359-df26a6fce56c)'
+              azureResourceGroup: 'aks-group'
+              kubernetesCluster: 'myAKSCluster'
+              namespace: '$(namespace)'
+              manifests: |
+                apex-front-main/frontend-deployment.yaml
+                apex-front-main/service.yaml
+              containers: '$(containerRegistry)/$(imageRepository):$(tag)'
