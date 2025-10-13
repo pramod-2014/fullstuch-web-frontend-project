@@ -30,12 +30,10 @@ stages:
           - task: SonarCloudPrepare@2
             displayName: "Prepare SonarCloud Analysis"
             inputs:
-              SonarCloud: 'sonarqubeServiceConnection'    # Azure DevOps Service Connection
+              SonarCloud: 'sonarqubeServiceConnection'
               organization: 'cloudsolution'
               scannerMode: 'CLI'
-              configMode: 'manual'
-              cliProjectKey: 'cloudsolution_cloudsolution'
-              cliProjectName: 'cloudsolution'
+              configMode: 'file'
               extraProperties: |
                 sonar.sources=.
                 sonar.exclusions=**/tests/**
@@ -45,6 +43,8 @@ stages:
           # ✅ Updated SonarCloud Analyze (v2)
           # ------------------------
           - task: SonarCloudAnalyze@2
+            inputs:
+              jdkversion: 'JAVA_HOME_21_X64'
             displayName: "Run SonarCloud Analysis"
 
           # ------------------------
